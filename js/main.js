@@ -12,23 +12,43 @@ document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('load', function () {
     setTimeout(function () {
       loader.classList.add('hidden');
-      
-      // Explicitly trigger video playback for mobile
-      const allVideos = document.querySelectorAll('video');
-      allVideos.forEach(video => {
-        video.play().catch(err => {
-          console.log("Playback prevented:", err);
-        });
-      });
+
+      // Explicitly attempt video playback
+      unmuteAndPlayVideos();
     }, 1500);
   });
+
+  // Global Interaction Unblocker for Mobile Video
+  // Mobile browsers (especially iOS) block autoplay until the first user gesture.
+  const unblockVideos = () => {
+    unmuteAndPlayVideos();
+    // Remove listeners after first interaction
+    document.removeEventListener('touchstart', unblockVideos);
+    document.removeEventListener('mousedown', unblockVideos);
+    document.removeEventListener('scroll', unblockVideos);
+  };
+
+  document.addEventListener('touchstart', unblockVideos, { passive: true });
+  document.addEventListener('mousedown', unblockVideos, { passive: true });
+  document.addEventListener('scroll', unblockVideos, { passive: true });
+
+  function unmuteAndPlayVideos() {
+    const allVideos = document.querySelectorAll('video');
+    allVideos.forEach(video => {
+      // Ensure muted (required for autoplay) and call play
+      video.muted = true;
+      video.play().catch(err => {
+        // Silent fail is fine, it will try again on next interaction
+      });
+    });
+  }
 
   // Fallback: hide loader after 3 seconds even if not fully loaded
   setTimeout(function () {
     if (!loader.classList.contains('hidden')) {
       loader.classList.add('hidden');
       const allVideos = document.querySelectorAll('video');
-      allVideos.forEach(video => video.play().catch(() => {}));
+      allVideos.forEach(video => video.play().catch(() => { }));
     }
   }, 3000);
 
