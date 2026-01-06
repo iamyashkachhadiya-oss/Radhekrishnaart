@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // ============================================
   const loader = document.getElementById('loader');
 
+  // Immediate attempt as soon as the DOM is ready
+  unmuteAndPlayVideos();
+
   window.addEventListener('load', function () {
     // Start fading loader
     setTimeout(function () {
@@ -18,8 +21,9 @@ document.addEventListener('DOMContentLoaded', function () {
       // Browsers are more likely to allow it once the element is "visible"
       unmuteAndPlayVideos();
 
-      // Re-attempt after a short delay when loader is fully gone
-      setTimeout(unmuteAndPlayVideos, 1000);
+      // Repeatedly attempt playback as loader fades
+      const retryInterval = setInterval(unmuteAndPlayVideos, 500);
+      setTimeout(() => clearInterval(retryInterval), 5000);
     }, 1000);
   });
 
