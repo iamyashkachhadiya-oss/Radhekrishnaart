@@ -10,36 +10,69 @@ document.addEventListener('DOMContentLoaded', function () {
   const loader = document.getElementById('loader');
 
   window.addEventListener('load', function () {
+    // Start fading loader
     setTimeout(function () {
       loader.classList.add('hidden');
 
-      // Explicitly attempt video playback
+      // IMPORTANT: As soon as loader starts fading, try to play
+      // Browsers are more likely to allow it once the element is "visible"
       unmuteAndPlayVideos();
-    }, 1500);
+
+      // Re-attempt after a short delay when loader is fully gone
+      setTimeout(unmuteAndPlayVideos, 1000);
+    }, 1000);
   });
 
-  // Global Interaction Unblocker for Mobile Video
-  // Mobile browsers (especially iOS) block autoplay until the first user gesture.
+  // Global Interaction Unblocker
+  // We listen for ANY user gesture to unblock playback
   const unblockVideos = () => {
     unmuteAndPlayVideos();
-    // Remove listeners after first interaction
+    // Once unblocked, we don't need these listeners anymore
     document.removeEventListener('touchstart', unblockVideos);
     document.removeEventListener('mousedown', unblockVideos);
     document.removeEventListener('scroll', unblockVideos);
+    document.removeEventListener('keydown', unblockVideos);
   };
 
+  // Add listeners with passive option for better performance
   document.addEventListener('touchstart', unblockVideos, { passive: true });
   document.addEventListener('mousedown', unblockVideos, { passive: true });
   document.addEventListener('scroll', unblockVideos, { passive: true });
+  document.addEventListener('keydown', unblockVideos, { passive: true });
 
   function unmuteAndPlayVideos() {
     const allVideos = document.querySelectorAll('video');
     allVideos.forEach(video => {
-      // Ensure muted (required for autoplay) and call play
+      // Ensure muted and playsinline are set (standard for mobile autoplay)
       video.muted = true;
-      video.play().catch(err => {
-        // Silent fail is fine, it will try again on next interaction
+      video.setAttribute('playsinline', '');
+
+      const playPromise = video.play();
+
+      if (playPromise !== undefined) {
+        playPromise.then(_ => {
+          // Autoplay started successfully
+        }).catch(error => {
+          // Autoplay was prevented
+          // We don't log here to keep console clean, the unblockers will handle it
+        });
+      }
+    });
+  }
+
+  // Additional Check: Play videos when they enter the viewport
+  // This sometimes triggers a "blessed" play on certain browsers
+  if ('IntersectionObserver' in window) {
+    const videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          unmuteAndPlayVideos();
+        }
       });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('video').forEach(video => {
+      videoObserver.observe(video);
     });
   }
 
