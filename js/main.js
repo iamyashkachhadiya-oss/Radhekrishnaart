@@ -12,12 +12,24 @@ document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('load', function () {
     setTimeout(function () {
       loader.classList.add('hidden');
+      
+      // Explicitly trigger video playback for mobile
+      const allVideos = document.querySelectorAll('video');
+      allVideos.forEach(video => {
+        video.play().catch(err => {
+          console.log("Playback prevented:", err);
+        });
+      });
     }, 1500);
   });
 
   // Fallback: hide loader after 3 seconds even if not fully loaded
   setTimeout(function () {
-    loader.classList.add('hidden');
+    if (!loader.classList.contains('hidden')) {
+      loader.classList.add('hidden');
+      const allVideos = document.querySelectorAll('video');
+      allVideos.forEach(video => video.play().catch(() => {}));
+    }
   }, 3000);
 
   // ============================================
